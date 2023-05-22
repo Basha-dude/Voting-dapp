@@ -5,7 +5,7 @@ const { ethers } = require("hardhat");
 describe("Voting", function () {
   let voting
   beforeEach(async () => {
-      [owner] = await ethers.getSigners();
+      [owner,voter1] = await ethers.getSigners();
 
     const Voting = await ethers.getContractFactory("Voting");
     voting = await Voting.deploy(["Basha","Rasool","Siddu"],60);
@@ -22,12 +22,24 @@ describe("Voting", function () {
     );
   });
   
+  it("should pass the voting end", async () => {
+    const votingStart = await voting.votingStart();
+    const votingDuration = 60; // Duration in minutes
+    const votingEnd = votingStart.add(votingDuration * 60); // Convert minutes to seconds
+    const tolerance = 200;
+    expect(await voting.votingEnd()).to.be.within(
+      votingEnd.sub(tolerance),
+      votingEnd.add(tolerance)
+    );
+   });
+  
+
     it("should return the owner as Organisation",async () => {
-      expect(await voting.Organization()).to.eq(owner.address);
+      expect(await voting.owner()).to.eq(owner.address);
     })
       describe('Get all Candidates', () => { 
         it("should return the candidates",async () => {
-          const candidates = await voting.getAllCandidates();
+          const candidates = await voting.getAllVotesOfCandiates();
           expect(candidates.length).to.equal(3);
           expect(candidates[0].name).to.equal('Basha');
           expect(candidates[0].voteCount).to.equal(0);
@@ -37,11 +49,44 @@ describe("Voting", function () {
 
           expect(candidates[2].name).to.equal('Siddu');
           expect(candidates[2].voteCount).to.equal(0);
+       })
+        })
+
+        describe('Vote', () => { 
+        
+              beforeEach(async () => {
+                await voting.vote(0);
+              })
+              it("should revert a vote",async () => {
+             const candidates = await voting.getAllVotesOfCandiates();
+             expect(candidates[0].voteCount).to.equal(1);
+            })
+         
+
+          it("should revert a vote",async () => {
+            await expect(voting.vote(0)).to.be.revertedWith("You have already voted.");
+         })
+         it("should revert a vote",async () => {
+          await expect(voting.connect(voter1).vote(5)).to.be.revertedWith("Invalid candidate index.");
+       })
+       describe('Add Candidate', () => { 
+        beforeEach(async () =>{
+          await voting.addCandidate("Naseer");
+        })
+        it("should add a candidate",async () => {
+          const candidates = await voting.getAllVotesOfCandiates();
+          expect(candidates[3].name).to.equal("Naseer");
+          expect(candidates[3].voteCount).to.equal(0);
 
         })
-        
+        it("should revert add candidate",async () => {
+          await expect(voting.connect(voter1).addCandidate("Naseer")).to.be.reverted;
        })
+
+        })
+      
   })
+})
 
 
 
