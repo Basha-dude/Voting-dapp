@@ -1,6 +1,7 @@
 
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
+
 
 describe("Voting", function () {
   let voting
@@ -13,6 +14,7 @@ describe("Voting", function () {
   })
   it("should pass the voting start", async () => {
     const votingStart = await voting.votingStart();
+    console.log("voting start in state variable ",votingStart);
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const tolerance = 5; // Tolerance of 5 seconds
   
@@ -20,13 +22,16 @@ describe("Voting", function () {
       currentTimestamp - tolerance,
       currentTimestamp + tolerance
     );
-  });
+    console.log("  currentTimestamp - tolerance",  currentTimestamp - tolerance,);
   
+  });
+   
   it("should pass the voting end", async () => {
     const votingStart = await voting.votingStart();
     const votingDuration = 60; // Duration in minutes
     const votingEnd = votingStart.add(votingDuration * 60); // Convert minutes to seconds
-    const tolerance = 200;
+    const tolerance = 5;
+    console.log("voting end in state variable",votingEnd);
     expect(await voting.votingEnd()).to.be.within(
       votingEnd.sub(tolerance),
       votingEnd.add(tolerance)
@@ -84,6 +89,31 @@ describe("Voting", function () {
        })
 
         })
+
+        describe('Get voting status', () => { 
+          it("should show the voting status",async () => {
+            const votingDuration = 60;
+            const votingStart = await voting.votingStart(); 
+            const votingEnd = votingStart.add(votingDuration * 60)
+            const VotingStatus = await voting.getVotingStatus();
+            console.log("voting start",votingStart);
+            console.log(VotingStatus);
+            console.log("voting end",votingEnd);
+            expect(VotingStatus).to.eq(true);
+          })
+         
+        })
+        describe('Get remaining Time', () => { 
+          it("should return the remaining time",async () => {
+            const votingDuration = 60;
+            const votingStart = await voting.votingStart();
+            console.log("voting start in reaming ",votingStart);
+            const votingEnd = votingStart.add(votingDuration * 60);
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            const remainingTime = await voting.getRemainingTime();
+              expect(await voting.getRemainingTime()).to.eq(remainingTime)
+          })
+         })
       
   })
 })
